@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/scala-ripple.iml" filepath="$PROJECT_DIR$/scala-ripple.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/scala-ripple-build.iml" filepath="$PROJECT_DIR$/.idea/modules/scala-ripple-build.iml" />
     </modules>
   </component>
 </project>
