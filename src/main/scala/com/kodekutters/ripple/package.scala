@@ -3,6 +3,7 @@ package com.kodekutters.ripple
 import play.api.libs.json._
 import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
+import scala.math.BigDecimal
 
 /**
  * the ripple protocol
@@ -41,6 +42,19 @@ package object protocol {
   }
 
   // quality_in and quality_out should be unsigned
+  /**
+   * a trust line object
+   *
+   * @param account The unique address of the account this line applies to.
+   * @param balance Representation of the numeric balance currently held against this line. A positive balance means that the account holds value; a negative balance means that the account owes value.
+   * @param currency The currency this line applies to
+   * @param limit The maximum amount of the given currency that the account is willing to owe the peer account
+   * @param limit_peer The maximum amount of currency that the peer account is willing to owe the account
+   * @param no_ripple Whether or not the account has the NoRipple flag set for this line
+   * @param no_ripple_peer Whether or not the peer account has the NoRipple flag set for the other direction of this trust line
+   * @param quality_in Ratio for incoming transit fees represented in billionths. (For example, a value of 500 million represents a 0.5:1 ratio.) As a special case, 0 is treated as a 1:1 ratio.
+   * @param quality_out Ratio for outgoing transit fees represented in billionths. (For example, a value of 500 million represents a 0.5:1 ratio.) As a special case, 0 is treated as a 1:1 ratio.
+   */
   final case class Trust_line(account: String, balance: String, currency: String, limit: String,
                               limit_peer: String, no_ripple: Option[Boolean], no_ripple_peer: Option[Boolean],
                               quality_in: Int, quality_out: Int)
@@ -49,12 +63,67 @@ package object protocol {
     implicit val fmt = Json.format[Trust_line]
   }
 
-  final case class CurrencyAmount(currency: String, value: String, issuer: String)
 
-  object CurrencyAmount {
-    implicit val fmt = Json.format[CurrencyAmount]
+  /**
+   * a currency specification object
+   *
+   * @param currency Three-letter ISO 4217 Currency Code string (“XRP” is invalid). Alternatively, an unsigned 160-bit hex value according to the Currency format.
+   * @param value Quoted decimal representation of the amount of currency
+   * @param issuer Unique account address of the entity issuing the currency. In other words, the person or business where the currency can be redeemed.
+   */
+  final case class CurrencyAmount(value: String, currency: String = "", issuer: String = "") {
+
+    def this(value: BigDecimal, currency: String, issuer: String) = this(value.toString, currency, issuer)
+
+    // for XRP only
+    def this(value: BigDecimal) = this(value.toString)
+
+    def this(value: Int) = this(new BigDecimal(new java.math.BigDecimal(value)), "", "")
+
+    def this(value: Float) = this(new BigDecimal(new java.math.BigDecimal(value)), "", "")
+
+    def this(value: Long) = this(new BigDecimal(new java.math.BigDecimal(value)), "", "")
   }
 
+  object CurrencyAmount {
+
+    val XRP = "XRP"
+
+    val currencyReads: Reads[CurrencyAmount] = new Reads[CurrencyAmount] {
+      def reads(json: JsValue) = {
+        val currency = (json \ "currency").asOpt[String]
+        val issuer = (json \ "issuer").asOpt[String]
+
+        if (currency.isDefined && issuer.isDefined) {
+          Json.format[CurrencyAmount].reads(json)
+        } else {
+          json.asOpt[String] match {
+            case None => Json.format[CurrencyAmount].reads(JsNull)
+            case Some(amount) =>
+              val js = Json.parse(s"""{"currency": "", "value": "$amount", "issuer": ""}""")
+              Json.format[CurrencyAmount].reads(js)
+          }
+        }
+      }
+    }
+
+    val currencyWrites = new Writes[CurrencyAmount] {
+      def writes(w: CurrencyAmount) =
+        if (w.currency.isEmpty && w.issuer.isEmpty) JsString(w.value) // XRP
+        else Json.obj("currency" -> w.currency, "value" -> w.value, "issuer" -> w.issuer)
+    }
+
+    implicit val fmt: Format[CurrencyAmount] = Format(currencyReads, currencyWrites)
+  }
+
+  /**
+   * an offer object
+   *
+   * @param flags
+   * @param seq
+   * @param taker_gets
+   * @param taker_pays
+   */
   final case class Offer(flags: Option[Int], seq: Option[Int], taker_gets: Option[String], taker_pays: Option[CurrencyAmount])
 
   object Offer {
@@ -91,8 +160,7 @@ package object protocol {
    * @param ledger_index (Optional) The sequence number of the ledger to use, or a shortcut string to choose a ledger automatically.
    */
   final case class Account_info(command: String = "account_info", id: Option[Int], account: String,
-                                strict: Option[Boolean], ledger_hash: Option[String],ledger_index: Option[String]) extends RequestType
-
+                                strict: Option[Boolean], ledger_hash: Option[String], ledger_index: Option[String]) extends RequestType
   object Account_info {
     implicit val fmt = Json.format[Account_info]
   }
@@ -146,15 +214,11 @@ package object protocol {
       }
     }
 
-    val requestTypeWrites = new Writes[RequestType] {
-      def writes(requestType: RequestType) =
-        requestType match {
+    val requestTypeWrites = Writes[RequestType] {
           case x: Account_info => Json.format[Account_info].writes(x)
           case x: Account_lines => Json.format[Account_lines].writes(x)
           case x: Account_offers => Json.format[Account_offers].writes(x)
           case x: Account_tx => Json.format[Account_tx].writes(x)
-          case _ => JsNull
-        }
     }
 
     implicit val fmt: Format[RequestType] = Format(requestTypeReads, requestTypeWrites)
@@ -174,7 +238,7 @@ package object protocol {
 
   /**
    * response to a Account_info request
-   * 
+   *
    * @param account_data Information about the requested account
    * @param ledger_index (Omitted if ledger_current_index is provided instead)
    *                     The sequence number of the ledger used when retrieving this information.
@@ -208,7 +272,9 @@ package object protocol {
 
   object ResponseType {
 
-    // these reads are dangerous, it will match the first pattern maybe not the correct type
+    // these reads are dangerous, it will match the first signature match and
+    // that maybe not be the desired type.
+    // todo must check the signatures are different for all ResponseType
     val responseTypeReads =
       JsPath.read[Account_info_response].map(x => x: ResponseType) |
         JsPath.read[Account_lines_response].map(x => x: ResponseType) |
@@ -216,27 +282,23 @@ package object protocol {
         JsPath.read[Account_tx_response].map(x => x: ResponseType)
 
     // these reads are dangerous, it will match the first pattern maybe not the correct type
-//    val responseTypeReads2 = new Reads[ResponseType] {
-//      def reads(json: JsValue) = {
-//        json match {
-//          case x if json.validate[Account_info_response].isSuccess => Json.format[Account_info_response].reads(json)
-//          case x if json.validate[Account_lines_response].isSuccess => Json.format[Account_lines_response].reads(json)
-//          case x if json.validate[Account_offers_response].isSuccess => Json.format[Account_offers_response].reads(json)
-//          case x if json.validate[Account_tx_response].isSuccess => Json.format[Account_tx_response].reads(json)
-//          case _ => JsError("responseTypeReads could not read jsValue: " + json + " into a ResponseType")
-//        }
-//      }
-//    }
+    //    val responseTypeReads2 = new Reads[ResponseType] {
+    //      def reads(json: JsValue) = {
+    //        json match {
+    //          case x if json.validate[Account_info_response].isSuccess => Json.format[Account_info_response].reads(json)
+    //          case x if json.validate[Account_lines_response].isSuccess => Json.format[Account_lines_response].reads(json)
+    //          case x if json.validate[Account_offers_response].isSuccess => Json.format[Account_offers_response].reads(json)
+    //          case x if json.validate[Account_tx_response].isSuccess => Json.format[Account_tx_response].reads(json)
+    //          case _ => JsError("responseTypeReads could not read jsValue: " + json + " into a ResponseType")
+    //        }
+    //      }
+    //    }
 
-    val responseTypeWrites = new Writes[ResponseType] {
-      def writes(responseType: ResponseType) =
-        responseType match {
+    val responseTypeWrites = Writes[ResponseType] {
           case x: Account_info_response => Json.format[Account_info_response].writes(x)
           case x: Account_lines_response => Json.format[Account_lines_response].writes(x)
           case x: Account_offers_response => Json.format[Account_offers_response].writes(x)
           case x: Account_tx_response => Json.format[Account_tx_response].writes(x)
-          case _ => JsNull
-        }
     }
 
     implicit val fmt: Format[ResponseType] = Format(responseTypeReads, responseTypeWrites)

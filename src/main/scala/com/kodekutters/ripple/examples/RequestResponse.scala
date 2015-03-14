@@ -2,9 +2,9 @@ package com.kodekutters.ripple.examples
 
 import akka.actor.{Props, ActorLogging, Actor}
 import com.kodekutters.ripple.core.LinkerApp
-import com.kodekutters.ripple.protocol.{Account_tx, Account_offers, Account_info, Account_lines}
+import com.kodekutters.ripple.protocol._
 import messages.JsonMessage
-import play.api.libs.json.Json
+import play.api.libs.json.{JsError, JsSuccess, Json}
 
 
 /**
@@ -21,9 +21,11 @@ object RequestResponse extends LinkerApp {
 
     val account_info = new Account_info("account_info", Some(123), theAccount, Some(true), None, Some("validated"))
 
-    val account_offers = new Account_offers("account_info", Some(123), theAccount, None, Some("current"), None, None)
+    val account_offers = new Account_offers("account_offers", Some(123), theAccount, None, Some("current"), None, None)
 
     val account_tx = new Account_tx("account_tx", Some(123), "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59", None, Some(-1), Some(-1), Some(2), None, None, Some(false), Some(false))
+
+    println("\nrequest: " + Json.prettyPrint(Json.toJson(account_info)))
 
     // the handler for the responses
     withHandler(system.actorOf(TestHandler.props(123)))
@@ -40,15 +42,17 @@ object RequestResponse extends LinkerApp {
  */
 class TestHandler(accountId: Int) extends Actor with ActorLogging {
 
-  import com.kodekutters.ripple.protocol.Response._
+  import Response._
 
   def receive = {
 
     case JsonMessage(js) =>
-      println("\n js: " + Json.prettyPrint(js))
-      // convert the json to a Response
-      val response = Json.fromJson(js)
-      println("\n response: " + response + "\n")
+      println("\nresponse_js: " + Json.prettyPrint(js))
+      // try to convert the json into a Response object
+      Json.fromJson(js) match {
+        case response: JsSuccess[Response] => println("\nresponse_obj: " + response.get + "\n")
+        case e: JsError => println("Errors: " + JsError.toFlatJson(e).toString())
+      }
 
     case _ => None
   }

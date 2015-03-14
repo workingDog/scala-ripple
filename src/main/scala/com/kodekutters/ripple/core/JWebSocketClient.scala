@@ -49,7 +49,7 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
     // send the msg to the server
     case Send(msg) => client.send(msg)
 
-    case x => log.info("RECV: x " + x.toString)
+    case x => log.info("in JWebSocketClient receive: x " + x.toString)
   }
 
 }
