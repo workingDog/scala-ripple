@@ -281,19 +281,6 @@ package object protocol {
         JsPath.read[Account_offers_response].map(x => x: ResponseType) |
         JsPath.read[Account_tx_response].map(x => x: ResponseType)
 
-    // these reads are dangerous, it will match the first pattern maybe not the correct type
-    //    val responseTypeReads2 = new Reads[ResponseType] {
-    //      def reads(json: JsValue) = {
-    //        json match {
-    //          case x if json.validate[Account_info_response].isSuccess => Json.format[Account_info_response].reads(json)
-    //          case x if json.validate[Account_lines_response].isSuccess => Json.format[Account_lines_response].reads(json)
-    //          case x if json.validate[Account_offers_response].isSuccess => Json.format[Account_offers_response].reads(json)
-    //          case x if json.validate[Account_tx_response].isSuccess => Json.format[Account_tx_response].reads(json)
-    //          case _ => JsError("responseTypeReads could not read jsValue: " + json + " into a ResponseType")
-    //        }
-    //      }
-    //    }
-
     val responseTypeWrites = Writes[ResponseType] {
           case x: Account_info_response => Json.format[Account_info_response].writes(x)
           case x: Account_lines_response => Json.format[Account_lines_response].writes(x)
@@ -305,6 +292,18 @@ package object protocol {
   }
 
   // NOTE: id can be a string or int or ...
+  /**
+   * a response (from the server) object
+   *
+   * @param `type` Typically "response", which indicates a successful response to a command.
+   * @param id (WebSocket only) ID provided in the request that prompted this response
+   * @param status "success" if the request successfully completed. In the WebSocket API responses, this is included at the top level; in JSON-RPC and Commandline responses, this is included as a sub-field of the "result" object.
+   * @param result The result of the query; contents vary depending on the command.
+   * @param error A string description of the error
+   * @param error_code A unique integer code for the type of error that occurred
+   * @param error_message A string error message
+   * @param request A copy of the request that prompted this error, in JSON format. Caution: If the request contained any account secrets, they are copied here!
+   */
   case class Response(`type`: Option[String], id: Option[Int], status: Option[String],
                       result: Option[ResponseType], error: Option[String], error_code: Option[Int],
                       error_message: Option[String], request: Option[String])

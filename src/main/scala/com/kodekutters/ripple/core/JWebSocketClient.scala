@@ -5,8 +5,8 @@ import messages.{JsonMessage, ConnectionFailed, Send}
 import play.api.libs.json.Json
 import scala.collection.mutable
 import java.net.URI
-import org.java_websocket.drafts.{Draft_10, Draft}
-
+import org.java_websocket.drafts.Draft_17
+import collection.JavaConversions._
 
 /**
  * the web socket client that connects to the ripple server
@@ -17,14 +17,15 @@ import org.java_websocket.drafts.{Draft_10, Draft}
 
 class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) extends Actor with ActorLogging {
 
-  val headers: Map[String, String] = Map()
+  val headers: java.util.Map[String,String] = mutable.Map[String,String]()
   // Map(("Authorization", "Basic " + new sun.misc.BASE64Encoder().encode((rpcUser + ":" + rpcPass).getBytes)) :: Nil: _*)
 
   // the client receives all server responses and pass them onto the handlers
-  val client = new WSClient(URI.create(uris), new Draft_10(), headers, 0) {
+  val client = new WSClient(URI.create(uris), new Draft_17(), headers, 0) {
+    // receive the server responses
     override def onMessage(msg: String) = {
       try {
-        // convert the response to json
+        // convert the response message to json
         val js = Json.parse(msg)
         // forward all responses from the server to the handlers
         handlerList.foreach(handler => handler forward JsonMessage(js))
@@ -39,7 +40,7 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
     println("connected to: " + client.getURI)
   } catch {
     case e: Exception =>
-      println("\n.....error could not connect to: " + client.getURI)
+      println("\n.....error in JWebSocketClient could not connect to: " + client.getURI)
       context.parent ! ConnectionFailed
       context stop self
   }
