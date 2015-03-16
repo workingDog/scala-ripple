@@ -143,6 +143,15 @@ package object protocol {
     implicit val fmt = Json.format[Marker]
   }
 
+  final case class Ledger_data(accepted: Option[Boolean], account_hash: Option[String], close_time: Option[Int],
+                               close_time_human: Option[String], close_time_resolution: Option[Int], closed: Option[Boolean],
+                               ledger_hash: Option[String], ledger_index: Option[String], parent_hash: Option[String],
+                               total_coins: Option[String], transaction_hash: Option[String], validated: Option[Boolean])
+
+  object Ledger_data {
+    implicit val fmt = Json.format[Ledger_data]
+  }
+
   //-------------------------------------------------------------------------------
   //--------------------------requests/commands------------------------------------
   //-------------------------------------------------------------------------------
@@ -189,6 +198,14 @@ package object protocol {
   object Account_tx {
     implicit val fmt = Json.format[Account_tx]
   }
+
+  final case class Ledger(command: String = "ledger", id: Option[Int], accounts: Option[Boolean] = None,
+                          transactions: Option[Boolean] = None, full: Option[Boolean] = None, expand: Option[Boolean] = None,
+                          ledger_hash: Option[String], ledger_index: Option[String]) extends RequestType
+  object Ledger {
+    implicit val fmt = Json.format[Ledger]
+  }
+
 
   sealed trait RequestType {
     val command: String
@@ -267,6 +284,16 @@ package object protocol {
     implicit val fmt = Json.format[Account_tx_response]
   }
 
+  final case class Ledger_response(ledger: Ledger_data, validated: Option[Boolean],
+                                   ledger_current_index: Option[Int]) extends ResponseType
+
+  object Ledger_response {
+    implicit val fmt = Json.format[Ledger_response]
+  }
+
+
+
+
   sealed trait ResponseType
 
   object ResponseType {
@@ -278,13 +305,15 @@ package object protocol {
       JsPath.read[Account_info_response].map(x => x: ResponseType) |
         JsPath.read[Account_lines_response].map(x => x: ResponseType) |
         JsPath.read[Account_offers_response].map(x => x: ResponseType) |
-        JsPath.read[Account_tx_response].map(x => x: ResponseType)
+        JsPath.read[Account_tx_response].map(x => x: ResponseType) |
+        JsPath.read[Ledger_response].map(x => x: ResponseType)
 
     val responseTypeWrites = Writes[ResponseType] {
           case x: Account_info_response => Json.format[Account_info_response].writes(x)
           case x: Account_lines_response => Json.format[Account_lines_response].writes(x)
           case x: Account_offers_response => Json.format[Account_offers_response].writes(x)
           case x: Account_tx_response => Json.format[Account_tx_response].writes(x)
+          case x: Ledger_response => Json.format[Ledger_response].writes(x)
     }
 
     implicit val fmt: Format[ResponseType] = Format(responseTypeReads, responseTypeWrites)
@@ -305,7 +334,7 @@ package object protocol {
    */
   case class Response(`type`: Option[String], id: Option[Int], status: Option[String],
                       result: Option[ResponseType], error: Option[String], error_code: Option[Int],
-                      error_message: Option[String], request: Option[String])
+                      error_message: Option[String], request: Option[JsValue])
 
   object Response {
 
@@ -317,7 +346,7 @@ package object protocol {
         (JsPath \ "error").readNullable[String] and
         (JsPath \ "error_code").readNullable[Int] and
         (JsPath \ "error_message").readNullable[String] and
-        (JsPath \ "request").readNullable[String]
+        (JsPath \ "request").readNullable[JsValue]
       )(Response.apply _)
 
     val responseWrites = new Writes[Response] {

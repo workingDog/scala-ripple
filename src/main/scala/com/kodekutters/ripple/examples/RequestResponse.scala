@@ -25,13 +25,15 @@ object RequestResponse extends LinkerApp {
 
     val account_tx = new Account_tx("account_tx", Some(123), "r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59", None, Some(-1), Some(-1), Some(2), None, None, Some(false), Some(false))
 
-    println("\nrequest: " + Json.prettyPrint(Json.toJson(account_info)))
+    val ledger = new Ledger("ledger", Some(123), None, None, None, None, None, Some("current"))
+
+    println("\nrequest: " + Json.prettyPrint(Json.toJson(ledger)))
 
     // the handler for the responses
     withHandler(system.actorOf(TestHandler.props(123)))
 
     // send the request
-    sendRequest(Json.toJson(account_info).toString)
+    sendRequest(Json.toJson(ledger).toString)
   }
 
 }
