@@ -48,7 +48,7 @@ class TestHandler(accountId: Int) extends Actor with ActorLogging {
 
     case JsonMessage(js) =>
       println("\nresponse_js: " + Json.prettyPrint(js))
-      // try to convert the json into a Response object
+      // convert the json message into a Response object
       Json.fromJson(js) match {
         case response: JsSuccess[Response] => println("\nresponse_obj: " + response.get + "\n")
         case e: JsError => println("Errors: " + JsError.toFlatJson(e).toString())

@@ -63,7 +63,6 @@ package object protocol {
     implicit val fmt = Json.format[Trust_line]
   }
 
-
   /**
    * a currency specification object
    *

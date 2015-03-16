@@ -38,7 +38,7 @@ class StellarHandler() extends Actor {
 
   def receive = {
 
-    case JsonMessage(js) => println("\n js: " + Json.prettyPrint(js))
+    case JsonMessage(js) => println("\n StellarHandler js: " + Json.prettyPrint(js))
 
     case x => println("StellarHandler: " + x.toString)
   }

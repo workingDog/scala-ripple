@@ -2,11 +2,14 @@ package com.kodekutters.ripple.core
 
 import akka.actor._
 import messages.{JsonMessage, ConnectionFailed, Send}
+import org.java_websocket.handshake.ServerHandshake
 import play.api.libs.json.Json
 import scala.collection.mutable
 import java.net.URI
 import org.java_websocket.drafts.Draft_17
 import collection.JavaConversions._
+import java.util.Base64
+
 
 /**
  * the web socket client that connects to the ripple server
@@ -18,7 +21,7 @@ import collection.JavaConversions._
 class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) extends Actor with ActorLogging {
 
   val headers: java.util.Map[String,String] = mutable.Map[String,String]()
-  // Map(("Authorization", "Basic " + new sun.misc.BASE64Encoder().encode((rpcUser + ":" + rpcPass).getBytes)) :: Nil: _*)
+  // Map(("Authorization", "Basic " + Base64.getUrlEncoder.encodeToString((user + ":" + pass).getBytes)) :: Nil: _*)
 
   // the client receives all server responses and pass them onto the handlers
   val client = new WSClient(URI.create(uris), new Draft_17(), headers, 0) {
@@ -32,6 +35,10 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
       } catch {
         case e: Exception => println("\n.....in JWebSocketClient error " + e)
       }
+    }
+
+    override def onOpen(handshakeData: ServerHandshake) = {
+      println("websockets connecting: " + handshakeData.getHttpStatusMessage)
     }
   }
 
@@ -50,7 +57,7 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
     // send the msg to the server
     case Send(msg) => client.send(msg)
 
-    case x => log.info("in JWebSocketClient receive: x " + x.toString)
+    case x => log.info("\nin JWebSocketClient received message: " + x.toString)
   }
 
 }
