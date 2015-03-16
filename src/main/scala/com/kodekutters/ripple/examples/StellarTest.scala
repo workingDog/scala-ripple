@@ -1,8 +1,8 @@
 package com.kodekutters.ripple.examples
 
-import messages.{JsonMessage, Send, Register}
+import messages.{ResponseMsg, Send, Register}
 import akka.actor.{Props, Actor, ActorSystem}
-import com.kodekutters.ripple.core.{RippleLinker}
+import com.kodekutters.ripple.core.RippleLinker
 import play.api.libs.json.Json
 
 
@@ -38,7 +38,7 @@ class StellarHandler() extends Actor {
 
   def receive = {
 
-    case JsonMessage(js) => println("\n StellarHandler js: " + Json.prettyPrint(js))
+    case ResponseMsg(response) => println("\nStellarHandler response msg: \n" + response)
 
     case x => println("StellarHandler: " + x.toString)
   }

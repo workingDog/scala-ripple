@@ -1,6 +1,6 @@
 package com.kodekutters.ripple.examples
 
-import messages.{JsonMessage, Send, Register}
+import messages.{Send, Register}
 import akka.actor.{Props, Actor, ActorSystem}
 import com.kodekutters.ripple.core.RippleLinker
 import play.api.libs.json.Json
@@ -41,8 +41,6 @@ object BitcoinTest {
 class BitcoinHandler() extends Actor {
   def receive = {
     case x => println("bitcoin: " + x.toString)
-    //  case JsonMessage(js) => println("\n js: " + Json.prettyPrint(js))
-    //  case x => println("bitcoin: " + x.toString)
   }
 }
 

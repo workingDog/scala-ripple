@@ -1,9 +1,10 @@
 package com.kodekutters.ripple.core
 
 import akka.actor._
-import messages.{JsonMessage, ConnectionFailed, Send}
+import com.kodekutters.ripple.protocol.Response
+import messages.{ResponseMsg, ConnectionFailed, Send}
 import org.java_websocket.handshake.ServerHandshake
-import play.api.libs.json.Json
+import play.api.libs.json.{JsError, JsSuccess, Json}
 import scala.collection.mutable
 import java.net.URI
 import org.java_websocket.drafts.Draft_17
@@ -20,6 +21,8 @@ import java.util.Base64
 
 class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) extends Actor with ActorLogging {
 
+  import Response._
+
   val headers: java.util.Map[String,String] = mutable.Map[String,String]()
   // Map(("Authorization", "Basic " + Base64.getUrlEncoder.encodeToString((user + ":" + pass).getBytes)) :: Nil: _*)
 
@@ -28,10 +31,16 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
     // receive the server responses
     override def onMessage(msg: String) = {
       try {
-        // convert the response message to json
-        val js = Json.parse(msg)
-        // forward all responses from the server to the handlers
-        handlerList.foreach(handler => handler forward JsonMessage(js))
+        // convert the msg to a Response, i.e. validating the json message
+        Json.fromJson(Json.parse(msg)) match {
+          // forward all valid responses from the server to the handlers
+          case response: JsSuccess[Response] =>
+            handlerList.foreach(handler => handler forward ResponseMsg(response.get))
+
+          case e: JsError =>
+            println("\n error... Response cannot be validated: " + JsError.toFlatJson(e).toString())
+            println("\n "+ Json.prettyPrint(Json.parse(msg)))
+        }
       } catch {
         case e: Exception => println("\n.....in JWebSocketClient error " + e)
       }

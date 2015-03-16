@@ -224,6 +224,7 @@ package object protocol {
               case "account_lines" => Json.format[Account_lines].reads(json)
               case "account_offers" => Json.format[Account_offers].reads(json)
               case "account_tx" => Json.format[Account_tx].reads(json)
+              case "ledger" => Json.format[Ledger].reads(json)
               case _ => JsError("in requestTypeReads could not read: " + json + " into a RequestType")
             }
         }
@@ -235,6 +236,7 @@ package object protocol {
           case x: Account_lines => Json.format[Account_lines].writes(x)
           case x: Account_offers => Json.format[Account_offers].writes(x)
           case x: Account_tx => Json.format[Account_tx].writes(x)
+          case x: Ledger => Json.format[Ledger].writes(x)
     }
 
     implicit val fmt: Format[RequestType] = Format(requestTypeReads, requestTypeWrites)
@@ -291,7 +293,19 @@ package object protocol {
     implicit val fmt = Json.format[Ledger_response]
   }
 
+  // just for testing
+  final case class Stellar_response(stellar: JsValue) extends ResponseType
 
+  object Stellar_response {
+
+    val sReads = JsPath.read[JsValue].map(s => Stellar_response(s))
+
+    val sWrites = new Writes[ResponseType] {
+      def writes(stellar: ResponseType): JsValue = Json.obj("stellar" -> stellar)
+    }
+
+    implicit val fmt: Format[Stellar_response] = Format(sReads, sWrites)
+  }
 
 
   sealed trait ResponseType
@@ -306,7 +320,8 @@ package object protocol {
         JsPath.read[Account_lines_response].map(x => x: ResponseType) |
         JsPath.read[Account_offers_response].map(x => x: ResponseType) |
         JsPath.read[Account_tx_response].map(x => x: ResponseType) |
-        JsPath.read[Ledger_response].map(x => x: ResponseType)
+        JsPath.read[Ledger_response].map(x => x: ResponseType) |
+        JsPath.read[Stellar_response].map(x => x: ResponseType)
 
     val responseTypeWrites = Writes[ResponseType] {
           case x: Account_info_response => Json.format[Account_info_response].writes(x)
@@ -314,6 +329,7 @@ package object protocol {
           case x: Account_offers_response => Json.format[Account_offers_response].writes(x)
           case x: Account_tx_response => Json.format[Account_tx_response].writes(x)
           case x: Ledger_response => Json.format[Ledger_response].writes(x)
+          case x: Stellar_response => Json.format[Stellar_response].writes(x)
     }
 
     implicit val fmt: Format[ResponseType] = Format(responseTypeReads, responseTypeWrites)

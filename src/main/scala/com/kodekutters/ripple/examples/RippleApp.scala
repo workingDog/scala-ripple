@@ -2,7 +2,7 @@ package com.kodekutters.ripple.examples
 
 import akka.actor.{Actor, Props}
 import com.kodekutters.ripple.core.LinkerApp
-import messages.JsonMessage
+import messages.ResponseMsg
 import play.api.libs.json.Json
 
 /**
@@ -23,7 +23,7 @@ object RippleApp extends LinkerApp {
   // responses to the requests are received here
   class MyHandler extends Actor {
     def receive = {
-      case JsonMessage(js) => println("\n js: " + Json.prettyPrint(js))
+      case ResponseMsg(response) => println("\n response msg: " + response)
       case _ => None
     }
   }

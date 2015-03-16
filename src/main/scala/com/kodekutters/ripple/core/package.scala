@@ -1,6 +1,6 @@
 
 import akka.actor.ActorRef
-import play.api.libs.json._
+import com.kodekutters.ripple.protocol.Response
 
 /**
  * the messages used by the actors.
@@ -21,6 +21,6 @@ package object messages {
 
   case class Send(message: String)
 
-  case class JsonMessage(js: JsValue)
+  case class ResponseMsg(response: Response)
 
 }

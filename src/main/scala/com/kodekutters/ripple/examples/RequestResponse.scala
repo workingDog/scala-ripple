@@ -3,8 +3,8 @@ package com.kodekutters.ripple.examples
 import akka.actor.{Props, ActorLogging, Actor}
 import com.kodekutters.ripple.core.LinkerApp
 import com.kodekutters.ripple.protocol._
-import messages.JsonMessage
-import play.api.libs.json.{JsError, JsSuccess, Json}
+import messages.ResponseMsg
+import play.api.libs.json.Json
 
 
 /**
@@ -27,13 +27,13 @@ object RequestResponse extends LinkerApp {
 
     val ledger = new Ledger("ledger", Some(123), None, None, None, None, None, Some("current"))
 
-    println("\nrequest: " + Json.prettyPrint(Json.toJson(ledger)))
+    println("\nrequest: " + Json.prettyPrint(Json.toJson(account_info)))
 
     // the handler for the responses
     withHandler(system.actorOf(TestHandler.props(123)))
 
     // send the request
-    sendRequest(Json.toJson(ledger).toString)
+    sendRequest(Json.toJson(account_info).toString)
   }
 
 }
@@ -44,17 +44,9 @@ object RequestResponse extends LinkerApp {
  */
 class TestHandler(accountId: Int) extends Actor with ActorLogging {
 
-  import Response._
-
   def receive = {
 
-    case JsonMessage(js) =>
-      println("\nresponse_js: " + Json.prettyPrint(js))
-      // convert the json message into a Response object
-      Json.fromJson(js) match {
-        case response: JsSuccess[Response] => println("\nresponse_obj: " + response.get + "\n")
-        case e: JsError => println("Errors: " + JsError.toFlatJson(e).toString())
-      }
+    case ResponseMsg(response) => println("\nresponse msg: \n" + response + "\n")
 
     case _ => None
   }
