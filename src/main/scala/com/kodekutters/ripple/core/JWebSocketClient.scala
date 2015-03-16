@@ -28,12 +28,12 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
 
   // the client receives all server responses and pass them onto the handlers
   val client = new WSClient(URI.create(uris), new Draft_17(), headers, 0) {
-    // receive the server responses
+    // receive the server response messages
     override def onMessage(msg: String) = {
       try {
-        // convert the msg to a Response, i.e. validating the json message
+        // convert the msg to a Response, validating the json message in the process
         Json.fromJson(Json.parse(msg)) match {
-          // forward all valid responses from the server to the handlers
+          // forward all valid responses to all handlers
           case response: JsSuccess[Response] =>
             handlerList.foreach(handler => handler forward ResponseMsg(response.get))
 
