@@ -34,8 +34,7 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
         // convert the msg to a Response, validating the json message in the process
         Json.fromJson(Json.parse(msg)) match {
           // forward all valid responses to all handlers
-          case response: JsSuccess[Response] =>
-            handlerList.foreach(handler => handler forward ResponseMsg(response.get))
+          case response: JsSuccess[Response] => handlerList.foreach(handler => handler forward ResponseMsg(response.get))
 
           case e: JsError =>
             println("\n error... Response cannot be validated: " + JsError.toFlatJson(e).toString())
