@@ -1,14 +1,14 @@
 package com.kodekutters.ripple.examples
 
-import akka.actor.{Props, ActorLogging, Actor}
+import akka.actor.{ActorRef, Props, ActorLogging, Actor}
 import com.kodekutters.ripple.core.LinkerApp
 import com.kodekutters.ripple.protocol._
-import messages.ResponseMsg
+import messages.{Disconnect, ResponseMsg}
 import play.api.libs.json.Json
 
 
 /**
- * testing sending ripple commands (requests) and receiving the corresponding responses from the server
+ * tests sending ripple commands (requests) and receiving the corresponding responses from the server
  */
 object RequestResponse extends LinkerApp {
 
@@ -40,18 +40,22 @@ object RequestResponse extends LinkerApp {
 
 /**
  * a test handler that receives the ripple server responses
- * @param accountId
+ * @param id
  */
-class TestHandler(accountId: Int) extends Actor with ActorLogging {
+class TestHandler(id: Int)(implicit linker: ActorRef) extends Actor with ActorLogging {
 
   def receive = {
 
-    case ResponseMsg(response) => println("\nresponse msg: \n" + response + "\n")
+    case ResponseMsg(response) =>
+      println("\nresponse msg: \n" + response + "\n")
+      linker ! Disconnect
+      sys.exit()  // for testing
 
     case _ => None
   }
 }
 
 object TestHandler {
-  def props(accountId: Int): Props = Props(new TestHandler(accountId))
+
+  def props(id: Int)(implicit linker: ActorRef): Props = Props(new TestHandler(id))
 }

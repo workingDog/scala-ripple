@@ -25,7 +25,7 @@ class RippleLinker(uris: String) extends Actor with ActorLogging with HandlersMa
   //      Restart
   //  }
 
-  // handlers registration, then the linker receive
+  // handlers registration then the linker receive
   def receive = manageHandlers orElse linkerReceive
 
   def linkerReceive: Receive = {

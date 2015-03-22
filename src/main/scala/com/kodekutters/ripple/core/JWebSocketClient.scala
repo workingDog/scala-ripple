@@ -2,7 +2,7 @@ package com.kodekutters.ripple.core
 
 import akka.actor._
 import com.kodekutters.ripple.protocol.Response
-import messages.{ResponseMsg, ConnectionFailed, Send}
+import messages.{Disconnect, ResponseMsg, ConnectionFailed, Send}
 import org.java_websocket.handshake.ServerHandshake
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import scala.collection.mutable
@@ -31,7 +31,7 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
     // receive the server response messages
     override def onMessage(msg: String) = {
       try {
-        // convert the msg to a Response, validating the json message in the process
+        // convert the msg to a Response, validating the message in the process
         Json.fromJson(Json.parse(msg)) match {
           // forward all valid responses to all handlers
           case response: JsSuccess[Response] => handlerList.foreach(handler => handler forward ResponseMsg(response.get))
@@ -64,6 +64,9 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
   def receive = {
     // send the msg to the server
     case Send(msg) => client.send(msg)
+
+    // close the websocket client
+    case Disconnect => client.close()
 
     case x => log.info("\nin JWebSocketClient received message: " + x.toString)
   }

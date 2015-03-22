@@ -11,12 +11,12 @@ class LinkerApp {
   implicit val system = ActorSystem("RippleSession")
 
   // create the ripple server linker
-  val linker = system.actorOf(RippleLinker.props("wss://s1.ripple.com:443/"))
+  implicit val linker = system.actorOf(RippleLinker.props("wss://s1.ripple.com:443/"))
 
   // give the linker time to connect
   Thread.sleep(2000)
 
-  // register the handler
+  // register a handler
   def withHandler(handler: ActorRef) = linker ! Register(handler)
 
   // send the request

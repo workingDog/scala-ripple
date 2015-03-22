@@ -13,6 +13,8 @@ package object messages {
 
   case object CloseHandler
 
+  case object Disconnect
+
   case class Close(handler: ActorRef)
 
   case class Register(handler: ActorRef)
