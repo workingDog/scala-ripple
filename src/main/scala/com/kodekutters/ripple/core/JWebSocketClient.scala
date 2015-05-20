@@ -7,7 +7,7 @@ import org.java_websocket.handshake.ServerHandshake
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import scala.collection.mutable
 import java.net.URI
-import org.java_websocket.drafts.Draft_17
+import org.java_websocket.drafts.{Draft_10, Draft_17}
 import collection.JavaConversions._
 import java.util.Base64
 

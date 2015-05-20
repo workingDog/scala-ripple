@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import messages.{Send, Register}
 
 /**
- * convenience base class for a Ripple application
+ * convenience base class for using the Ripple server
  */
 class LinkerApp {
 

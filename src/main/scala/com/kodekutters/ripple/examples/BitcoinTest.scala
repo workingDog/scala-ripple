@@ -26,9 +26,9 @@ object BitcoinTest {
     // handler for the responses to this request
     val bcHandler = system.actorOf(BitcoinHandler.props())
 
-    // the blockchain server linker     "wss://ws.blockchain.info/inv"
+    // the blockchain server linker
     val linker = system.actorOf(RippleLinker.props("wss://ws.blockchain.info/inv"))
-    Thread.sleep(2000)
+    Thread.sleep(3000)
 
     // register the handler
     linker ! Register(bcHandler)
