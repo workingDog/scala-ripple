@@ -6,10 +6,10 @@ organization := "com.kodekutters"
 
 version := "1.0"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
- "com.typesafe.akka" % "akka-actor_2.11" % "2.3.11",
+  "com.typesafe.akka" % "akka-actor_2.11" % "2.4-M2",
  "org.java-websocket" % "Java-WebSocket" % "1.3.0",
- "com.typesafe.play" % "play-json_2.11" % "2.4.0-RC3"
+ "com.typesafe.play" % "play-json_2.11" % "2.4.2"
 )

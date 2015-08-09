@@ -47,7 +47,7 @@ class TestHandler(id: Int) extends Actor with ActorLogging {
   def receive = {
 
     case ResponseMsg(response) =>
-      println("\nresponse msg: \n" + response + "\n")
+      println("\nresponse msg: \n" + response + "\n" + Json.prettyPrint(Json.toJson(response)))
       sys.exit()  // for testing
 
     case _ => None
