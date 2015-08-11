@@ -13,6 +13,7 @@ import play.api.libs.json.Json
 object RequestResponse extends LinkerApp {
 
   def main(args: Array[String]) {
+    import RequestType._
 
     // BitStamp account   "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
     val theAccount = "rKQsDnGTkc3532Zp7pX6zaLZz48xJBqkJL"
@@ -33,7 +34,7 @@ object RequestResponse extends LinkerApp {
     withHandler(system.actorOf(TestHandler.props(123)))
 
     // send the request
-    sendRequest(Json.toJson(account_info).toString)
+    sendRequest(toJsonString(account_info))
   }
 
 }

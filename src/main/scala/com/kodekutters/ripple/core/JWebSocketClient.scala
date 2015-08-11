@@ -37,7 +37,7 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
           case response: JsSuccess[Response] => handlerList.foreach(handler => handler forward ResponseMsg(response.get))
 
           case e: JsError =>
-            println("\n error... Response cannot be validated: " + JsError.toFlatJson(e).toString())
+            println("\n error... Response cannot be validated: " + JsError.toJson(e).toString())
             println("\n "+ Json.prettyPrint(Json.parse(msg)))
         }
       } catch {

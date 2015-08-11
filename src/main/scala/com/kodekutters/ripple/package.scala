@@ -214,6 +214,8 @@ package object protocol {
 
   object RequestType {
 
+    def toJsonString(req: RequestType) = Json.toJson(req).toString
+
     val requestTypeReads = new Reads[RequestType] {
       def reads(json: JsValue) = {
         (json \ "command").asOpt[String] match {
@@ -310,6 +312,8 @@ package object protocol {
   sealed trait ResponseType
 
   object ResponseType {
+
+    def toJsonString(resp: ResponseType) = Json.toJson(resp).toString
 
     // these reads are dangerous, it will match the first signature match and
     // that maybe not be the desired type.

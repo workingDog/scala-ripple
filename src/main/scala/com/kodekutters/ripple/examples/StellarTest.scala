@@ -1,5 +1,6 @@
 package com.kodekutters.ripple.examples
 
+import com.kodekutters.ripple.protocol.Account_offers
 import messages.{ResponseMsg, Send, Register}
 import akka.actor.{Props, Actor, ActorSystem}
 import com.kodekutters.ripple.core.RippleLinker
@@ -14,6 +15,8 @@ object StellarTest {
 
   def main(args: Array[String]) {
     implicit val system = ActorSystem("stellartestsession")
+
+    val account_offers = new Account_offers("account_offers", Some(1234567), "ganVp9o5emfzpwrG5QVUXqMv8AgLcdvySb", None, Some("current"), None, None)
 
     val test1 = Json.parse("""{ "command": "account_offers", "id": 1234567, "account": "ganVp9o5emfzpwrG5QVUXqMv8AgLcdvySb" }""")
 
@@ -31,7 +34,7 @@ object StellarTest {
     // register the handler
     linker ! Register(handler)
     // send the request
-    linker ! Send(test1.toString)
+    linker ! Send(Json.toJson(account_offers).toString)   // (test1.toString)
   }
 }
 

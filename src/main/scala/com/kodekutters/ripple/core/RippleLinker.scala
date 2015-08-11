@@ -18,7 +18,7 @@ class RippleLinker(uris: String) extends Actor with ActorLogging with HandlersMa
   // create the web socket client that connects to the server
   val wsClient = context.actorOf(JWebSocketClient.props(uris, handlerList))
 
-  // supervise the client ... TODO
+  // supervise the clients ... TODO
   //  override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
   //    case _ =>
   //      log.info("\nin RippleLinker supervisorStrategy Restart")
