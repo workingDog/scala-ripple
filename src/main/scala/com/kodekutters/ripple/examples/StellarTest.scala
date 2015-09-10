@@ -16,7 +16,7 @@ object StellarTest {
   def main(args: Array[String]) {
     implicit val system = ActorSystem("stellartestsession")
 
-    val account_offers = new Account_offers("account_offers", Some(1234567), "ganVp9o5emfzpwrG5QVUXqMv8AgLcdvySb", None, Some("current"), None, None)
+    val account_offers = new Account_offers(Some(1234567), "ganVp9o5emfzpwrG5QVUXqMv8AgLcdvySb", None, Some("current"), None, None)
 
     val test1 = Json.parse("""{ "command": "account_offers", "id": 1234567, "account": "ganVp9o5emfzpwrG5QVUXqMv8AgLcdvySb" }""")
 

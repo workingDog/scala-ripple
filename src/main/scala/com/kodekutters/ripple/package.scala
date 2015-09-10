@@ -2,8 +2,10 @@ package com.kodekutters.ripple
 
 import play.api.libs.json._
 import play.api.libs.json.Reads._
+import play.api.libs.json.Writes._
 import play.api.libs.functional.syntax._
 import scala.math.BigDecimal
+
 
 /**
  * the ripple protocol
@@ -56,7 +58,7 @@ package object protocol {
    * @param quality_out Ratio for outgoing transit fees represented in billionths. (For example, a value of 500 million represents a 0.5:1 ratio.) As a special case, 0 is treated as a 1:1 ratio.
    */
   final case class Trust_line(account: String, balance: String, currency: String, limit: String,
-                              limit_peer: String, no_ripple: Option[Boolean], no_ripple_peer: Option[Boolean],
+                              limit_peer: String, no_ripple: Option[Boolean] = None, no_ripple_peer: Option[Boolean] = None,
                               quality_in: Int, quality_out: Int)
 
   object Trust_line {
@@ -99,7 +101,7 @@ package object protocol {
           json.asOpt[String] match {
             case None => Json.format[CurrencyAmount].reads(JsNull)
             case Some(amount) =>
-              val js = Json.parse(s"""{"currency": "", "value": "$amount", "issuer": ""}""")
+              val js = Json.parse( s"""{"currency": "", "value": "$amount", "issuer": ""}""")
               Json.format[CurrencyAmount].reads(js)
           }
         }
@@ -115,6 +117,13 @@ package object protocol {
     implicit val fmt: Format[CurrencyAmount] = Format(currencyReads, currencyWrites)
   }
 
+  // if put "XRP" for currency, put None for the issuer (default), i.e. do not specify the issuer
+  final case class CurrencyOffer(currency: String = "", issuer: Option[String] = None)
+
+  object CurrencyOffer {
+    implicit val fmt = Json.format[CurrencyOffer]
+  }
+
   /**
    * an offer object
    *
@@ -123,30 +132,37 @@ package object protocol {
    * @param taker_gets
    * @param taker_pays
    */
-  final case class Offer(flags: Option[Int], seq: Option[Int], taker_gets: Option[String], taker_pays: Option[CurrencyAmount])
+  final case class Offer(flags: Option[Int] = None, seq: Option[Int] = None, taker_gets: Option[String] = None, taker_pays: Option[CurrencyAmount] = None)
 
   object Offer {
     implicit val fmt = Json.format[Offer]
   }
 
+  final case class OfferExtended(flags: Option[Int] = None, seq: Option[Int] = None, taker_gets: Option[String] = None, taker_pays: Option[CurrencyAmount] = None,
+                                 taker_gets_funded: Option[String] = None, taker_pays_funded: Option[String] = None, quality: Int)
+
+  object OfferExtended {
+    implicit val fmt = Json.format[OfferExtended]
+  }
+
   // binary false
-  final case class Transaction(ledger_index: Option[Int], meta: Option[JsValue], tx: Option[JsValue],
-                               tx_blob: Option[String], validated: Option[Boolean])
+  final case class Transaction(ledger_index: Option[Int] = None, meta: Option[JsValue] = None, tx: Option[JsValue] = None,
+                               tx_blob: Option[String] = None, validated: Option[Boolean] = None)
 
   object Transaction {
     implicit val fmt = Json.format[Transaction]
   }
 
-  final case class Marker(ledger: Option[Int], seq: Option[Int])
+  final case class Marker(ledger: Option[Int] = None, seq: Option[Int] = None)
 
   object Marker {
     implicit val fmt = Json.format[Marker]
   }
 
-  final case class Ledger_data(accepted: Option[Boolean], account_hash: Option[String], close_time: Option[Int],
-                               close_time_human: Option[String], close_time_resolution: Option[Int], closed: Option[Boolean],
-                               ledger_hash: Option[String], ledger_index: Option[String], parent_hash: Option[String],
-                               total_coins: Option[String], transaction_hash: Option[String], validated: Option[Boolean])
+  final case class Ledger_data(accepted: Option[Boolean] = None, account_hash: Option[String] = None, close_time: Option[Int] = None,
+                               close_time_human: Option[String] = None, close_time_resolution: Option[Int] = None, closed: Option[Boolean] = None,
+                               ledger_hash: Option[String] = None, ledger_index: Option[String] = None, parent_hash: Option[String] = None,
+                               total_coins: Option[String] = None, transaction_hash: Option[String] = None, validated: Option[Boolean] = None)
 
   object Ledger_data {
     implicit val fmt = Json.format[Ledger_data]
@@ -160,97 +176,243 @@ package object protocol {
    * The account_info command retrieves information about an account, its activity, and its XRP balance.
    * All information retrieved is relative to a particular version of the ledger.
    *
-   * @param command the WebSocket request command name, must be "account_info"
    * @param id (WebSocket only) ID provided in the request that prompted this response
    * @param account A unique identifier for the account, most commonly the account’s address.
    * @param strict (Optional, defaults to False) If set to True, then the account field will only accept a public key or account address.
    * @param ledger_hash (Optional) A 20-byte hex string for the ledger version to use.
    * @param ledger_index (Optional) The sequence number of the ledger to use, or a shortcut string to choose a ledger automatically.
    */
-  final case class Account_info(command: String = "account_info", id: Option[Int], account: String,
-                                strict: Option[Boolean], ledger_hash: Option[String], ledger_index: Option[String]) extends RequestType
+  final case class Account_info(override val id: Option[Int] = None, account: String, strict: Option[Boolean] = None,
+                                ledger_hash: Option[String] = None, ledger_index: Option[String] = None) extends RequestType("account_info", id)
+
   object Account_info {
-    implicit val fmt = Json.format[Account_info]
+
+    val theReads: Reads[Account_info] = new Reads[Account_info] {
+      def reads(json: JsValue): JsResult[Account_info] = (
+      (__ \ 'id).readNullable[Int] and
+      (__ \ 'account).read[String] and
+      (__ \ 'strict).readNullable[Boolean] and
+      (__ \ 'ledger_hash).readNullable[String] and
+      (__ \ 'ledger_index).readNullable[String] and
+      (__ \ 'command).read[String](Reads.pattern("""account_info""".r))
+    )( (id, account, strict, ledger_hash, ledger_index, _) => Account_info(id, account, strict, ledger_hash, ledger_index)).reads(json)
+    }
+
+    val theWrites: Writes[Account_info] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int] and
+        (JsPath \ "account").write[String] and
+        (JsPath \ "strict").writeNullable[Boolean] and
+        (JsPath \ "ledger_hash").writeNullable[String] and
+        (JsPath \ "ledger_index").writeNullable[String]
+      )(s => (s.command, s.id, s.account, s.strict, s.ledger_hash, s.ledger_index))
+
+    implicit val fmt: Format[Account_info] = Format(theReads, theWrites)
   }
 
-  final case class Account_lines(command: String = "account_lines", id: Option[Int], account: String,
-                                 ledger_hash: Option[String], ledger_index: Option[String],
-                                 peer: Option[String], limit: Option[Int], marker: Option[String]) extends RequestType
+  final case class Account_lines(override val id: Option[Int] = None, account: String,
+                                 ledger_hash: Option[String] = None, ledger_index: Option[String] = None,
+                                 peer: Option[String] = None, limit: Option[Int] = None, marker: Option[String] = None) extends RequestType("account_lines", id)
 
   object Account_lines {
-    implicit val fmt = Json.format[Account_lines]
+
+    val theReads: Reads[Account_lines] = new Reads[Account_lines] {
+      def reads(json: JsValue): JsResult[Account_lines] = (
+            (__ \ 'command).read[String](Reads.pattern("""account_lines""".r)) and
+            (__ \ 'id).readNullable[Int] and
+            (__ \ 'account).read[String] and
+            (__ \ 'ledger_hash).readNullable[String] and
+            (__ \ 'ledger_index).readNullable[String] and
+            (__ \ 'peer).readNullable[String] and
+            (__ \ 'limit).readNullable[Int] and
+            (__ \ 'marker).readNullable[String]
+    )( (_, id, account, ledger_hash, ledger_index, peer, limit, marker) => Account_lines(id, account, ledger_hash, ledger_index,peer, limit, marker)).reads(json)
+    }
+
+    val theWrites: Writes[Account_lines] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int] and
+        (JsPath \ "account").write[String] and
+        (JsPath \ "ledger_hash").writeNullable[String] and
+        (JsPath \ "ledger_index").writeNullable[String] and
+        (JsPath \ "peer").writeNullable[String] and
+        (JsPath \ "limit").writeNullable[Int] and
+        (JsPath \ "marker").writeNullable[String]
+      )(s => (s.command, s.id, s.account, s.ledger_hash, s.ledger_index, s.peer, s.limit, s.marker))
+
+    implicit val fmt: Format[Account_lines] = Format(theReads, theWrites)
   }
 
-  final case class Account_offers(command: String = "account_offers", id: Option[Int], account: String,
-                                  ledger_hash: Option[String], ledger_index: Option[String],
-                                  limit: Option[Int], marker: Option[String]) extends RequestType
+  final case class Account_offers(override val id: Option[Int] = None, account: String,
+                                  ledger_hash: Option[String] = None, ledger_index: Option[String] = None,
+                                  limit: Option[Int] = None, marker: Option[String] = None) extends RequestType("account_offers", id)
 
   object Account_offers {
-    implicit val fmt = Json.format[Account_offers]
+
+    val theReads: Reads[Account_offers] = new Reads[Account_offers] {
+      def reads(json: JsValue): JsResult[Account_offers] = (
+            (__ \ 'command).read[String](Reads.pattern("""account_offers""".r)) and
+            (__ \ 'id).readNullable[Int] and
+            (__ \ 'account).read[String] and
+            (__ \ 'ledger_hash).readNullable[String] and
+            (__ \ 'ledger_index).readNullable[String] and
+            (__ \ 'limit).readNullable[Int] and
+            (__ \ 'marker).readNullable[String]
+    )( (_, id, account, ledger_hash, ledger_index, limit, marker) => Account_offers(id, account, ledger_hash, ledger_index, limit, marker)).reads(json)
+    }
+
+    val theWrites: Writes[Account_offers] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int] and
+        (JsPath \ "account").write[String] and
+        (JsPath \ "ledger_hash").writeNullable[String] and
+        (JsPath \ "ledger_index").writeNullable[String] and
+        (JsPath \ "limit").writeNullable[Int] and
+        (JsPath \ "marker").writeNullable[String]
+      )(s => (s.command, s.id, s.account, s.ledger_hash, s.ledger_index, s.limit, s.marker))
+
+    implicit val fmt: Format[Account_offers] = Format(theReads, theWrites)
   }
 
-  final case class Account_tx(command: String = "account_tx", id: Option[Int], account: String,
-                              ledger_hash: Option[String], ledger_index_min: Option[Int],
-                              ledger_index_max: Option[Int], limit: Option[Int],
-                              ledger_index: Option[String], marker: Option[String],
-                              binary: Option[Boolean], forward: Option[Boolean]) extends RequestType
+  final case class Account_tx(override val id: Option[Int] = None, account: String,
+                              ledger_hash: Option[String] = None, ledger_index_min: Option[Int] = None,
+                              ledger_index_max: Option[Int] = None, ledger_index: Option[String] = None,
+                              limit: Option[Int] = None, marker: Option[String] = None,
+                              binary: Option[Boolean] = None, forward: Option[Boolean] = None) extends RequestType("account_tx", id)
 
   object Account_tx {
-    implicit val fmt = Json.format[Account_tx]
+
+    val theReads: Reads[Account_tx] = new Reads[Account_tx] {
+      def reads(json: JsValue): JsResult[Account_tx] = (
+            (__ \ 'command).read[String](Reads.pattern("""Account_tx""".r)) and
+            (__ \ 'id).readNullable[Int] and
+            (__ \ 'account).read[String] and
+            (__ \ 'ledger_hash).readNullable[String] and
+            (__ \ 'ledger_index_min).readNullable[Int] and
+            (__ \ 'ledger_index_max).readNullable[Int] and
+            (__ \ 'ledger_index).readNullable[String] and
+            (__ \ 'limit).readNullable[Int] and
+            (__ \ 'marker).readNullable[String] and
+            (__ \ 'binary).readNullable[Boolean] and
+            (__ \ 'forward).readNullable[Boolean]
+    )( (_, id, account, ledger_hash, ledger_index_min, ledger_index_max, ledger_index,  limit, marker, binary, forward) =>
+    Account_tx(id, account, ledger_hash, ledger_index_min, ledger_index_max, ledger_index, limit, marker, binary, forward)).reads(json)
+    }
+
+    val theWrites: Writes[Account_tx] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int] and
+        (JsPath \ "account").write[String] and
+        (JsPath \ "ledger_hash").writeNullable[String] and
+        (JsPath \ "ledger_index_min").writeNullable[Int] and
+        (JsPath \ "ledger_index_max").writeNullable[Int] and
+        (JsPath \ "ledger_index").writeNullable[String] and
+        (JsPath \ "limit").writeNullable[Int] and
+        (JsPath \ "marker").writeNullable[String] and
+        (JsPath \ "binary").writeNullable[Boolean] and
+        (JsPath \ "forward").writeNullable[Boolean]
+      )(s => (s.command, s.id, s.account, s.ledger_hash, s.ledger_index_min, s.ledger_index_max, s.ledger_index, s.limit, s.marker, s.binary, s.forward))
+
+    implicit val fmt: Format[Account_tx] = Format(theReads, theWrites)
   }
 
-  final case class Ledger(command: String = "ledger", id: Option[Int], accounts: Option[Boolean] = None,
+  final case class Ledger(override val id: Option[Int] = None, accounts: Option[Boolean] = None,
                           transactions: Option[Boolean] = None, full: Option[Boolean] = None, expand: Option[Boolean] = None,
-                          ledger_hash: Option[String], ledger_index: Option[String]) extends RequestType
+                          ledger_hash: Option[String] = None, ledger_index: Option[String] = None) extends RequestType("ledger", id)
+
   object Ledger {
-    implicit val fmt = Json.format[Ledger]
+
+    val theReads: Reads[Ledger] = new Reads[Ledger] {
+      def reads(json: JsValue): JsResult[Ledger] = (
+            (__ \ 'command).read[String](Reads.pattern("""ledger""".r)) and
+            (__ \ 'id).readNullable[Int] and
+            (__ \ 'accounts).readNullable[Boolean] and
+            (__ \ 'transactions).readNullable[Boolean] and
+            (__ \ 'full).readNullable[Boolean] and
+            (__ \ 'expand).readNullable[Boolean] and
+            (__ \ 'ledger_hash).readNullable[String] and
+            (__ \ 'ledger_index).readNullable[String]
+    )( (_, id, accounts, transactions, full, expand, ledger_hash, ledger_index) => Ledger(id, accounts, transactions, full, expand, ledger_hash, ledger_index)).reads(json)
+    }
+
+    val theWrites: Writes[Ledger] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int] and
+        (JsPath \ "accounts").writeNullable[Boolean] and
+        (JsPath \ "transactions").writeNullable[Boolean] and
+        (JsPath \ "full").writeNullable[Boolean] and
+        (JsPath \ "expand").writeNullable[Boolean] and
+        (JsPath \ "ledger_hash").writeNullable[String] and
+        (JsPath \ "ledger_index").writeNullable[String]
+      )(s => (s.command, s.id, s.accounts, s.transactions, s.full, s.expand, s.ledger_hash, s.ledger_index))
+
+    implicit val fmt: Format[Ledger] = Format(theReads, theWrites)
   }
 
+  final case class Book_offers(override val id: Option[Int] = None, limit: Option[Int] = None, taker: Option[String] = None,
+                               taker_gets: CurrencyOffer, taker_pays: CurrencyAmount,
+                               ledger_hash: Option[String] = None, ledger_index: Option[String] = None) extends RequestType("book_offers", id)
 
-  sealed trait RequestType {
-    val command: String
-    val id: Option[Int]
+  object Book_offers {
+
+    val theReads: Reads[Book_offers] = new Reads[Book_offers] {
+      def reads(json: JsValue): JsResult[Book_offers] = (
+            (__ \ 'command).read[String](Reads.pattern("""book_offers""".r)) and
+            (__ \ 'id).readNullable[Int] and
+            (__ \ 'limit).readNullable[Int] and
+            (__ \ 'taker).readNullable[String] and
+            (__ \ 'taker_gets).read[CurrencyOffer] and
+            (__ \ 'taker_pays).read[CurrencyAmount] and
+            (__ \ 'ledger_hash).readNullable[String] and
+            (__ \ 'ledger_index).readNullable[String]
+    )( (_, id, limit, taker, taker_gets, taker_pays, ledger_hash, ledger_index) => Book_offers(id, limit, taker, taker_gets, taker_pays,ledger_hash, ledger_index)).reads(json)
+    }
+
+    val theWrites: Writes[Book_offers] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int] and
+        (JsPath \ "limit").writeNullable[Int] and
+        (JsPath \ "taker").writeNullable[String] and
+        (JsPath \ "taker_gets").write[CurrencyOffer] and
+        (JsPath \ "taker_pays").write[CurrencyAmount] and
+        (JsPath \ "ledger_hash").writeNullable[String] and
+        (JsPath \ "ledger_index").writeNullable[String]
+      )(s => (s.command, s.id, s.limit, s.taker, s.taker_gets, s.taker_pays, s.ledger_hash, s.ledger_index))
+
+    implicit val fmt: Format[Book_offers] = Format(theReads, theWrites)
   }
+
+  class RequestType(val command: String, val id: Option[Int] = None)
 
   object RequestType {
 
-    def toJsonString(req: RequestType) = Json.toJson(req).toString
+    def apply(command: String, id: Option[Int] = None) = new RequestType(command, id)
 
-    val requestTypeReads = new Reads[RequestType] {
-      def reads(json: JsValue) = {
-        (json \ "command").asOpt[String] match {
-          case None => JsError("in requestTypeReads could not read the command: " + json + " into a RequestType")
-          case Some(cmd) =>
-            cmd match {
-              case "account_info" => Json.format[Account_info].reads(json)
-              case "account_lines" => Json.format[Account_lines].reads(json)
-              case "account_offers" => Json.format[Account_offers].reads(json)
-              case "account_tx" => Json.format[Account_tx].reads(json)
-              case "ledger" => Json.format[Ledger].reads(json)
-              case _ => JsError("in requestTypeReads could not read: " + json + " into a RequestType")
-            }
-        }
-      }
+    def unapply(req: RequestType) = if (req == null) None else Some(req.command, req.id)
+
+    val theReads: Reads[RequestType] = new Reads[RequestType] {
+      def reads(json: JsValue): JsResult[RequestType] = (
+        (__ \ 'command).read[String] and
+        (__ \ 'id).readNullable[Int]
+    )( (command, id) => RequestType(command, id)).reads(json)
     }
 
-    val requestTypeWrites = Writes[RequestType] {
-          case x: Account_info => Json.format[Account_info].writes(x)
-          case x: Account_lines => Json.format[Account_lines].writes(x)
-          case x: Account_offers => Json.format[Account_offers].writes(x)
-          case x: Account_tx => Json.format[Account_tx].writes(x)
-          case x: Ledger => Json.format[Ledger].writes(x)
-    }
+    val theWrites: Writes[RequestType] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int]
+      )(s => (s.command, s.id))
 
-    implicit val fmt: Format[RequestType] = Format(requestTypeReads, requestTypeWrites)
+    implicit val fmt: Format[RequestType] = Format(theReads, theWrites)
+
   }
 
   //-------------------------------------------------------------------------------
   //---------------------------responses-------------------------------------------
   //-------------------------------------------------------------------------------
 
-  final case class Account_lines_response(account: String, lines: Array[Trust_line], ledger_current_index: Option[Int],
-                                          ledger_hash: Option[String], markers: Option[String],
-                                          ledger_index: Option[Int], validated: Option[Boolean]) extends ResponseType
+  final case class Account_lines_response(account: String, lines: Array[Trust_line], ledger_current_index: Option[Int] = None,
+                                          ledger_hash: Option[String] = None, markers: Option[String] = None,
+                                          ledger_index: Option[Int] = None, validated: Option[Boolean] = None) extends ResponseType
 
   object Account_lines_response {
     implicit val fmt = Json.format[Account_lines_response]
@@ -266,30 +428,37 @@ package object protocol {
    * @param validated True if this data is from a validated ledger version;
    *                  if omitted or set to false, this data is not final.
    */
-  final case class Account_info_response(account_data: Account_data, ledger_index: Option[Int], validated: Option[Boolean]) extends ResponseType
+  final case class Account_info_response(account_data: Account_data, ledger_index: Option[Int] = None, validated: Option[Boolean] = None) extends ResponseType
 
   object Account_info_response {
     implicit val fmt = Json.format[Account_info_response]
   }
 
-  final case class Account_offers_response(account: String, offers: Array[Offer], ledger_current_index: Option[Int],
-                                           ledger_index: Option[String], ledger_hash: Option[String], marker: Option[String]) extends ResponseType
+  final case class Account_offers_response(account: String, offers: Array[Offer], ledger_current_index: Option[Int] = None,
+                                           ledger_index: Option[String] = None, ledger_hash: Option[String] = None, marker: Option[String] = None) extends ResponseType
 
   object Account_offers_response {
     implicit val fmt = Json.format[Account_offers_response]
   }
 
-  final case class Account_tx_response(account: String, ledger_index_min: Option[Int],
-                                       validated: Option[Boolean], ledger_index_max: Option[Int],
-                                       limit: Option[Int], marker: Option[Marker], offset: Option[Int],
+  final case class Account_tx_response(account: String, ledger_index_min: Option[Int] = None,
+                                       validated: Option[Boolean] = None, ledger_index_max: Option[Int] = None,
+                                       limit: Option[Int] = None, marker: Option[Marker] = None, offset: Option[Int] = None,
                                        transactions: Array[Transaction]) extends ResponseType
 
   object Account_tx_response {
     implicit val fmt = Json.format[Account_tx_response]
   }
 
-  final case class Ledger_response(ledger: Ledger_data, validated: Option[Boolean],
-                                   ledger_current_index: Option[Int]) extends ResponseType
+  final case class Book_offers_response(ledger_current_index: Option[Int] = None, ledger_index_min: Option[Int] = None,
+                                        ledger_hash: Option[String] = None, offers: Array[OfferExtended]) extends ResponseType
+
+  object Book_offers_response {
+    implicit val fmt = Json.format[Book_offers_response]
+  }
+
+  final case class Ledger_response(ledger: Ledger_data, validated: Option[Boolean] = None,
+                                   ledger_current_index: Option[Int] = None) extends ResponseType
 
   object Ledger_response {
     implicit val fmt = Json.format[Ledger_response]
@@ -317,7 +486,7 @@ package object protocol {
 
     // these reads are dangerous, it will match the first signature match and
     // that maybe not be the desired type.
-    // todo must check the signatures are different for all ResponseType
+    // todo must redo and check the signatures are different for all ResponseType
     val responseTypeReads =
       JsPath.read[Account_info_response].map(x => x: ResponseType) |
         JsPath.read[Account_lines_response].map(x => x: ResponseType) |

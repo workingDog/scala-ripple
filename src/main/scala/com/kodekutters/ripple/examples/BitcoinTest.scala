@@ -5,6 +5,7 @@ import akka.actor.{Props, Actor, ActorSystem}
 import com.kodekutters.ripple.core.RippleLinker
 import play.api.libs.json.Json
 
+
 /**
  * does not work anymore !!!
  *
@@ -17,18 +18,20 @@ object BitcoinTest {
 
     implicit val system = ActorSystem("bitcoinsession")
 
-    val testMsg = Json.parse( """{"op":"unconfirmed_sub"}""")
+    val testMsg = Json.parse("""{"op":"unconfirmed_sub"}""")
 
     //    val testMsg = Json.parse("""{"op":"addr_sub", "addr":"1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX"}""")
 
-    val ping = Json.parse("""{"op":"ping_block"}""")
+    val ping2 = Json.parse("""{"op":"ping_block"}""")
+    val ping = Json.parse("""{"op": "unconfirmed_sub"}""")
+      // Json.parse("""{"op":"ping_block"}""")
 
     // handler for the responses to this request
     val bcHandler = system.actorOf(BitcoinHandler.props())
 
     // the blockchain server linker
-    val linker = system.actorOf(RippleLinker.props("wss://ws.blockchain.info/inv"))
-    Thread.sleep(3000)
+    val linker = system.actorOf(RippleLinker.props("ws://ws.blockchain.info/inv"))
+    Thread.sleep(1000)
 
     // register the handler
     linker ! Register(bcHandler)

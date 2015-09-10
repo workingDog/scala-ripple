@@ -23,7 +23,7 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
 
   import Response._
 
-  val headers: java.util.Map[String,String] = mutable.Map[String,String]()
+  val headers: java.util.Map[String, String] = mutable.Map[String,String]()
   // Map(("Authorization", "Basic " + Base64.getUrlEncoder.encodeToString((user + ":" + pass).getBytes)) :: Nil: _*)
 
   // the client receives all server responses and pass them onto the handlers
@@ -38,11 +38,15 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
 
           case e: JsError =>
             println("\n error... Response cannot be validated: " + JsError.toJson(e).toString())
-            println("\n "+ Json.prettyPrint(Json.parse(msg)))
+            println("\n " + Json.prettyPrint(Json.parse(msg)))
         }
       } catch {
         case e: Exception => println("\n.....in JWebSocketClient error " + e)
       }
+    }
+
+    override def onError(ex: Exception) = {
+      println("websockets onError: " + ex.toString)
     }
 
     override def onOpen(handshakeData: ServerHandshake) = {
@@ -50,20 +54,25 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
     }
   }
 
-  try {
-    client.connect()
-    println("connected to: " + client.getURI)
-  } catch {
-    case e: Exception =>
-      println("\n.....error in JWebSocketClient could not connect to: " + client.getURI)
-      context.parent ! ConnectionFailed
-      context stop self
+  private def doConnect() = {
+    try {
+      client.connect()
+      println("connected to: " + client.getURI)
+    } catch {
+      case e: Exception =>
+        println("\n.....error in JWebSocketClient could not connect to: " + client.getURI)
+        context.parent ! ConnectionFailed
+        context stop self
+    }
   }
+
+  // start the connection
+  doConnect()
 
   // messages received by this actor
   def receive = {
     // send the msg to the server
-    case Send(msg) => client.send(msg)
+    case Send(msg) =>  client.send(msg)
 
     // close the websocket client
     case Disconnect => client.close()

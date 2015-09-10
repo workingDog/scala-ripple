@@ -29,7 +29,6 @@ class RippleLinker(uris: String) extends Actor with ActorLogging with HandlersMa
   def receive = manageHandlers orElse linkerReceive
 
   def linkerReceive: Receive = {
-
     // typically from the client, when no connection could be established
     case ConnectionFailed =>
       log.info("\n......connection failed ")
@@ -39,7 +38,6 @@ class RippleLinker(uris: String) extends Actor with ActorLogging with HandlersMa
 
     // forward all other messages to the client
     case msg => wsClient forward msg
-
   }
 
 }
