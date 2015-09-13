@@ -23,11 +23,11 @@ class JWebSocketClient(uris: String, handlerList: mutable.HashSet[ActorRef]) ext
 
   import Response._
 
-  val headers: java.util.Map[String, String] = mutable.Map[String,String]()
+  //val headers: java.util.Map[String, String] = mutable.Map[String,String]()
   // Map(("Authorization", "Basic " + Base64.getUrlEncoder.encodeToString((user + ":" + pass).getBytes)) :: Nil: _*)
 
   // the client receives all server responses and pass them onto the handlers
-  val client = new WSClient(URI.create(uris), new Draft_17(), headers, 0) {
+  val client = new WSClient(uris) {
     // receive the server response messages
     override def onMessage(msg: String) = {
       try {

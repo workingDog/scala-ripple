@@ -16,10 +16,7 @@ import scala.collection.mutable
  * @param httpHeaders
  * @param connectTimeout
  */
-class WSClient(serverUri: URI,
-               protocolDraft: Draft,
-               httpHeaders: java.util.Map[String,String],
-               connectTimeout: Int)
+class WSClient(serverUri: URI, protocolDraft: Draft, httpHeaders: java.util.Map[String,String], connectTimeout: Int)
   extends WebSocketClient(serverUri, protocolDraft, httpHeaders, connectTimeout) {
 
   def this(serverUri: URI) = this(serverUri, new Draft_17(), mutable.Map[String,String](), 0)

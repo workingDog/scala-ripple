@@ -17,14 +17,12 @@ object RequestResponse extends LinkerApp {
     // BitStamp account   "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
     val theAccount = "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"
 
-    import Account_info._
-
     val orderBook = new Book_offers(Some(123), Some(10), Some("r9cZA1mLK5R5Am25ArfXFmqgNwjZgnfk59"),
       new CurrencyOffer(CurrencyAmount.XRP), new CurrencyAmount("1", "USD", "rvYAfWj5gh67oV6fW32ZzP3Aw4Eubs59B"))
 
-    val account_lines = new Account_lines(Some(123), theAccount, None, Some("current"))
+    val account_lines = new Account_lines(theAccount)
 
-    val account_info = new Account_info(Some(123), theAccount, Some(true), None, Some("validated"))
+    val account_info = new Account_info(123, theAccount, true, "", "validated")
 
     val account_offers = new Account_offers(Some(123), theAccount, None, Some("current"))
 

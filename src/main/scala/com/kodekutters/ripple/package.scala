@@ -18,9 +18,11 @@ import scala.math.BigDecimal
 package object protocol {
 
   //-------------------------------------------------------------------------------
-  //----------------------supporting elements-----------------------------------------
+  //----------------------supporting elements--------------------------------------
   //-------------------------------------------------------------------------------
 
+  //case object LedgerIndexType
+// type LegerIndex = Either[Int, String]
   /**
    * Information about the requested account
    *
@@ -78,12 +80,9 @@ package object protocol {
 
     // for XRP only
     def this(value: BigDecimal) = this(value.toString)
-
-    def this(value: Int) = this(new BigDecimal(new java.math.BigDecimal(value)), "", "")
-
-    def this(value: Float) = this(new BigDecimal(new java.math.BigDecimal(value)), "", "")
-
-    def this(value: Long) = this(new BigDecimal(new java.math.BigDecimal(value)), "", "")
+    def this(value: Int) = this(new BigDecimal(new java.math.BigDecimal(value)))
+    def this(value: Float) = this(new BigDecimal(new java.math.BigDecimal(value)))
+    def this(value: Long) = this(new BigDecimal(new java.math.BigDecimal(value)))
   }
 
   object CurrencyAmount {
@@ -183,7 +182,12 @@ package object protocol {
    * @param ledger_index (Optional) The sequence number of the ledger to use, or a shortcut string to choose a ledger automatically.
    */
   final case class Account_info(override val id: Option[Int] = None, account: String, strict: Option[Boolean] = None,
-                                ledger_hash: Option[String] = None, ledger_index: Option[String] = None) extends RequestType("account_info", id)
+                                ledger_hash: Option[String] = None, ledger_index: Option[String] = None) extends RequestType("account_info", id){
+
+    def this(account: String) = this(None, account)
+    def this(id: Int, account: String) = this(Option(id), account)
+    def this(id: Int, account: String, strict: Boolean, ledger_hash: String, ledger_index: String) = this(Option(id), account, Option(strict), Option(ledger_hash), Option(ledger_index))
+  }
 
   object Account_info {
 
@@ -212,7 +216,14 @@ package object protocol {
 
   final case class Account_lines(override val id: Option[Int] = None, account: String,
                                  ledger_hash: Option[String] = None, ledger_index: Option[String] = None,
-                                 peer: Option[String] = None, limit: Option[Int] = None, marker: Option[String] = None) extends RequestType("account_lines", id)
+                                 peer: Option[String] = None, limit: Option[Int] = None, marker: Option[String] = None) extends RequestType("account_lines", id){
+
+    def this(account: String) = this(None, account)
+    def this(id: Int, account: String) = this(Option(id), account)
+    def this(id: Int, account: String, ledger_hash: String, ledger_index: String, peer: String, limit: Int, marker: String) =
+      this(Option(id), account, Option(ledger_hash), Option(ledger_index), Option(peer), Option(limit), Option(marker))
+
+  }
 
   object Account_lines {
 
@@ -464,7 +475,7 @@ package object protocol {
     implicit val fmt = Json.format[Ledger_response]
   }
 
-  // a catch all json result
+  // a catch all json result  ... get rid of this todo
   final case class PlainJson(value: JsValue) extends ResponseType
 
   object PlainJson {
@@ -502,6 +513,8 @@ package object protocol {
           case x: Account_tx_response => Json.format[Account_tx_response].writes(x)
           case x: Ledger_response => Json.format[Ledger_response].writes(x)
           case x: PlainJson => Json.format[PlainJson].writes(x)
+
+          case _ => JsNull
     }
 
     implicit val fmt: Format[ResponseType] = Format(responseTypeReads, responseTypeWrites)

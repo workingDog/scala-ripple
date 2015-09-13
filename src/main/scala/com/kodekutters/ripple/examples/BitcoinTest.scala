@@ -20,7 +20,7 @@ object BitcoinTest {
 
     val testMsg = Json.parse("""{"op":"unconfirmed_sub"}""")
 
-    //    val testMsg = Json.parse("""{"op":"addr_sub", "addr":"1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX"}""")
+   // val testMsg2 = Json.parse("""{"op":"addr_sub", "addr":"1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX"}""")
 
     val ping2 = Json.parse("""{"op":"ping_block"}""")
     val ping = Json.parse("""{"op": "unconfirmed_sub"}""")
@@ -31,7 +31,7 @@ object BitcoinTest {
 
     // the blockchain server linker
     val linker = system.actorOf(RippleLinker.props("ws://ws.blockchain.info/inv"))
-    Thread.sleep(1000)
+    Thread.sleep(3000)
 
     // register the handler
     linker ! Register(bcHandler)
