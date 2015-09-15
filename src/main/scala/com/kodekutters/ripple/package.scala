@@ -20,9 +20,7 @@ package object protocol {
   //-------------------------------------------------------------------------------
   //----------------------supporting elements--------------------------------------
   //-------------------------------------------------------------------------------
-
-  //case object LedgerIndexType
-// type LegerIndex = Either[Int, String]
+  
   /**
    * Information about the requested account
    *
@@ -61,7 +59,7 @@ package object protocol {
    */
   final case class Trust_line(account: String, balance: String, currency: String, limit: String,
                               limit_peer: String, no_ripple: Option[Boolean] = None, no_ripple_peer: Option[Boolean] = None,
-                              quality_in: Int, quality_out: Int)
+                              quality_in: Long, quality_out: Long)
 
   object Trust_line {
     implicit val fmt = Json.format[Trust_line]
@@ -80,8 +78,11 @@ package object protocol {
 
     // for XRP only
     def this(value: BigDecimal) = this(value.toString)
+
     def this(value: Int) = this(new BigDecimal(new java.math.BigDecimal(value)))
+
     def this(value: Float) = this(new BigDecimal(new java.math.BigDecimal(value)))
+
     def this(value: Long) = this(new BigDecimal(new java.math.BigDecimal(value)))
   }
 
@@ -182,10 +183,12 @@ package object protocol {
    * @param ledger_index (Optional) The sequence number of the ledger to use, or a shortcut string to choose a ledger automatically.
    */
   final case class Account_info(override val id: Option[Int] = None, account: String, strict: Option[Boolean] = None,
-                                ledger_hash: Option[String] = None, ledger_index: Option[String] = None) extends RequestType("account_info", id){
+                                ledger_hash: Option[String] = None, ledger_index: Option[String] = None) extends RequestType("account_info", id) {
 
     def this(account: String) = this(None, account)
+
     def this(id: Int, account: String) = this(Option(id), account)
+
     def this(id: Int, account: String, strict: Boolean, ledger_hash: String, ledger_index: String) = this(Option(id), account, Option(strict), Option(ledger_hash), Option(ledger_index))
   }
 
@@ -216,10 +219,12 @@ package object protocol {
 
   final case class Account_lines(override val id: Option[Int] = None, account: String,
                                  ledger_hash: Option[String] = None, ledger_index: Option[String] = None,
-                                 peer: Option[String] = None, limit: Option[Int] = None, marker: Option[String] = None) extends RequestType("account_lines", id){
+                                 peer: Option[String] = None, limit: Option[Int] = None, marker: Option[String] = None) extends RequestType("account_lines", id) {
 
     def this(account: String) = this(None, account)
+
     def this(id: Int, account: String) = this(Option(id), account)
+
     def this(id: Int, account: String, ledger_hash: String, ledger_index: String, peer: String, limit: Int, marker: String) =
       this(Option(id), account, Option(ledger_hash), Option(ledger_index), Option(peer), Option(limit), Option(marker))
 
@@ -393,6 +398,73 @@ package object protocol {
     implicit val fmt: Format[Book_offers] = Format(theReads, theWrites)
   }
 
+  case class Ledger_closed(override val id: Option[Int] = None) extends RequestType("ledger_closed", id) {
+
+    def this(id: Int) = this(Option(id))
+  }
+
+  object Ledger_closed {
+
+    val theReads: Reads[Ledger_closed] = new Reads[Ledger_closed] {
+      def reads(json: JsValue): JsResult[Ledger_closed] = (
+            (__ \ 'command).read[String](Reads.pattern("""ledger_closed""".r)) and
+            (__ \ 'id).readNullable[Int]
+    )( (_, id) => Ledger_closed(id)).reads(json)
+    }
+
+    val theWrites: Writes[Ledger_closed] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int]
+      )(s => (s.command, s.id))
+
+    implicit val fmt: Format[Ledger_closed] = Format(theReads, theWrites)
+  }
+
+  case class Ledger_current(override val id: Option[Int] = None) extends RequestType("ledger_current", id) {
+
+    def this(id: Int) = this(Option(id))
+  }
+
+  object Ledger_current {
+
+    val theReads: Reads[Ledger_current] = new Reads[Ledger_current] {
+      def reads(json: JsValue): JsResult[Ledger_current] = (
+            (__ \ 'command).read[String](Reads.pattern("""ledger_current""".r)) and
+            (__ \ 'id).readNullable[Int]
+    )( (_, id) => Ledger_current(id)).reads(json)
+    }
+
+    val theWrites: Writes[Ledger_current] = (
+        (JsPath \ "command").write[String] and
+        (JsPath \ "id").writeNullable[Int]
+      )(s => (s.command, s.id))
+
+    implicit val fmt: Format[Ledger_current] = Format(theReads, theWrites)
+  }
+
+//  case class Ledger_entry(override val id: Option[Int] = None, account_root: Option[String],
+//                          directory: Option[String], ) extends RequestType("ledger_entry", id) {
+//
+//    def this(id: Int) = this(Option(id))
+//  }
+//
+//  object Ledger_entry {
+//
+//    val theReads: Reads[Ledger_entry] = new Reads[Ledger_entry] {
+//      def reads(json: JsValue): JsResult[Ledger_entry] = (
+//            (__ \ 'command).read[String](Reads.pattern("""ledger_entry""".r)) and
+//            (__ \ 'id).readNullable[Int]
+//    )( (_, id) => Ledger_entry(id)).reads(json)
+//    }
+//
+//    val theWrites: Writes[Ledger_entry] = (
+//        (JsPath \ "command").write[String] and
+//        (JsPath \ "id").writeNullable[Int]
+//      )(s => (s.command, s.id))
+//
+//    implicit val fmt: Format[Ledger_entry] = Format(theReads, theWrites)
+//  }
+
   class RequestType(val command: String, val id: Option[Int] = None)
 
   object RequestType {
@@ -520,7 +592,7 @@ package object protocol {
     implicit val fmt: Format[ResponseType] = Format(responseTypeReads, responseTypeWrites)
   }
 
-  // NOTE: id can be a string or int or ...
+  // NOTE: id can be a string or int or ...todo
   /**
    * a response (from the server) object
    *
@@ -538,23 +610,7 @@ package object protocol {
                       error_message: Option[String], request: Option[JsValue])
 
   object Response {
-
-    val responseReads: Reads[Response] = (
-      (JsPath \ "type").readNullable[String] and
-        (JsPath \ "id").readNullable[Int] and
-        (JsPath \ "status").readNullable[String] and
-        (JsPath \ "result").readNullable[ResponseType] and
-        (JsPath \ "error").readNullable[String] and
-        (JsPath \ "error_code").readNullable[Int] and
-        (JsPath \ "error_message").readNullable[String] and
-        (JsPath \ "request").readNullable[JsValue]
-      )(Response.apply _)
-
-    val responseWrites = new Writes[Response] {
-      def writes(response: Response) = Json.format[Response].writes(response)
-    }
-
-    implicit val fmt: Format[Response] = Format(responseReads, responseWrites)
+    implicit val fmt = Json.format[Response]
   }
 
 }
