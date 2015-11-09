@@ -80,16 +80,16 @@
     <orderEntry type="library" name="SBT: com.fasterxml.jackson.core:jackson-databind:2.5.4:jar" level="project" />
     <orderEntry type="library" name="SBT: com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.5.4:jar" level="project" />
     <orderEntry type="library" name="SBT: com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.5.4:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.akka:akka-actor_2.11:2.4-M2:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-datacommons_2.11:2.4.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-functional_2.11:2.4.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-iteratees_2.11:2.4.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: com.typesafe.play:play-json_2.11:2.4.2:jar" level="project" />
     <orderEntry type="library" name="SBT: joda-time:joda-time:2.8.1:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang:scala-compiler:2.11.7:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang:scala-library:2.11.7:jar" level="project" />
     <orderEntry type="library" name="SBT: org.scala-lang:scala-reflect:2.11.7:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang.modules:scala-parser-combinators_2.11:1.0.4:jar" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="SBT: org.scala-lang.modules:scala-xml_2.11:1.0.4:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.akka:akka-actor_2.11:2.4-M3:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-datacommons_2.11:2.4.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-functional_2.11:2.4.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-iteratees_2.11:2.4.3:jar" level="project" />
+    <orderEntry type="library" name="SBT: com.typesafe.play:play-json_2.11:2.4.3:jar" level="project" />
   </component>
 </module>

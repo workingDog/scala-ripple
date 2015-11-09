@@ -58,7 +58,7 @@ class TestHandler(id: Int) extends Actor with ActorLogging {
       println("response.result: \n" + response.result)
 
       val result = Json.toJson(response.result)
-      println("\nresult: \n" + result)
+      println("\nresult: \n" + Json.prettyPrint(result))
 
       sys.exit() // for testing
 
